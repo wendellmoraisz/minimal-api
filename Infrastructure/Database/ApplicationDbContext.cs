@@ -13,6 +13,18 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Admin> Admins { get; set; }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Admin>().HasData(
+            new Admin {
+                Id = 1,
+                Email = "admin@email.com",
+                Password = "123456",
+                Profile = "Adm"
+            }
+        );
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
