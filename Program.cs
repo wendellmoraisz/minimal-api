@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.DTOs;
@@ -42,6 +43,25 @@ app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminService adminSe
 #endregion
 
 #region Vehicles
+ValidationErrors validateDTO(VehicleDTO vehicleDTO)
+{
+    var validation = new ValidationErrors
+    {
+        Messages = new List<string>()
+    };
+
+    if (string.IsNullOrEmpty(vehicleDTO.Name))
+        validation.Messages.Add("Name is required");
+
+    if (string.IsNullOrEmpty(vehicleDTO.Brand))
+        validation.Messages.Add("Brand is required");
+
+    if (vehicleDTO.Year < 1800)
+        validation.Messages.Add("Year not allowed");
+
+    return validation;
+}
+
 app.MapGet("/vehicles", ([FromQuery] int? page, IVehicleService vehicleService) =>
 {
     var vehicles = vehicleService.GetAll(page);
@@ -60,6 +80,10 @@ app.MapGet("/vehicles/{id}", ([FromRoute] int id, IVehicleService vehicleService
 
 app.MapPost("/vehicles", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
 {
+    var validationErrors = validateDTO(vehicleDTO);
+    if (validationErrors.Messages.Count > 0)
+        return Results.BadRequest(validationErrors);
+
     var vehicle = new Vehicle
     {
         Name = vehicleDTO.Name,
@@ -73,6 +97,10 @@ app.MapPost("/vehicles", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehi
 
 app.MapPut("/vehicles/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
 {
+    var validationErrors = validateDTO(vehicleDTO);
+    if (validationErrors.Messages.Count > 0)
+        return Results.BadRequest(validationErrors);
+
     var vehicle = vehicleService.GetById(id);
     if (vehicle == null) return Results.NotFound();
 
