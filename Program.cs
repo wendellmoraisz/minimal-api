@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
+using minimal_api.Domain.Enums;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Domain.ModelViews;
 using minimal_api.Domain.Services;
@@ -39,6 +40,62 @@ app.MapPost("/admin/login", ([FromBody] LoginDTO loginDTO, IAdminService adminSe
         return Results.Ok("Login com sucesso");
 
     return Results.Unauthorized();
+}).WithTags("Admin");
+
+app.MapPost("/admin", ([FromBody] AdminDTO adminDTO, IAdminService adminService) =>
+{
+    var validation = new ValidationErrors
+    {
+        Messages = []
+    };
+
+    if (string.IsNullOrEmpty(adminDTO.Email))
+        validation.Messages.Add("Email is required");
+
+    if (string.IsNullOrEmpty(adminDTO.Password))
+        validation.Messages.Add("Password is required");
+
+    if (adminDTO.Profile is null)
+        validation.Messages.Add("Profile is required");
+
+    if (validation.Messages.Count > 0)
+        return Results.BadRequest(validation);
+
+    var admin = new Admin
+    {
+        Email = adminDTO.Email,
+        Password = adminDTO.Password,
+        Profile = adminDTO.Profile.ToString() ?? Profile.Editor.ToString()
+    };
+    adminService.Create(admin);
+
+    return Results.Created($"/admin/{admin.Id}", admin);
+}).WithTags("Admin");
+
+app.MapGet("/admin", ([FromQuery] int? page, IAdminService adminService) =>
+{
+    var modelView = new List<AdminModelView>();
+    var admins = adminService.GetAll(page);
+
+    foreach (var admin in admins)
+    {
+        modelView.Add(new AdminModelView
+        {
+            Id = admin.Id,
+            Email = admin.Email,
+            Profile = admin.Profile
+        });
+    }
+    return Results.Ok(modelView);
+}).WithTags("Admin");
+
+app.MapGet("/admin/{id}", ([FromRoute] int id, IAdminService adminService) =>
+{
+    var admin = adminService.GetById(id);
+
+    if (admin == null) return Results.NotFound();
+
+    return Results.Ok(admin);
 }).WithTags("Admin");
 #endregion
 
