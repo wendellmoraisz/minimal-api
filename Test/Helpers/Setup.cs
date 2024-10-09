@@ -23,7 +23,10 @@ public class Setup
         {
             builder.UseSetting("https_port", Setup.PORT).UseEnvironment("Testing");
 
-            builder.ConfigureServices(services => { });
+            builder.ConfigureServices(services => 
+            {
+                services.AddScoped<IAdminService, AdminServiceMock>();
+            });
         });
 
         Setup.client = Setup.http.CreateClient();
